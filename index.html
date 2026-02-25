@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>乒乓人生：真实赛历版</title>
+    <style>
+        :root {
+            --bg-color: #2c3e50; --text-main: #2d3436;
+            --atk-color: #e74c3c; --tec-color: #3498db; --sta-color: #f1c40f;
+            --men-color: #9b59b6; --hp-high: #2ecc71; --hp-low: #c0392b; --fame-color: #e67e22;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-color); color: var(--text-main); margin: 0; padding: 0; display: flex; justify-content: center; height: 100vh; overflow: hidden; user-select: none; }
+        #game-container { width: 100%; max-width: 600px; height: 100%; background: #f5f6fa; display: flex; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.5); position: relative; }
+        .screen { display: none; flex: 1; padding: 20px; overflow-y: auto; animation: fadeIn 0.4s; }
+        .screen.active { display: flex; flex-direction: column; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .btn { display: block; width: 100%; padding: 14px; margin: 8px 0; border: none; border-radius: 8px; background: #34495e; color: white; font-size: 15px; font-weight: bold; cursor: pointer; text-align: left; transition: 0.1s; }
+        .btn:active { transform: scale(0.98); }
+        .btn:disabled { background: #95a5a6; opacity: 0.6; cursor: not-allowed; }
+        
+        .top-bar { background: #c0392b; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .stat-row { margin-bottom: 8px; display: flex; align-items: center; font-size: 13px; }
+        .stat-label { width: 40px; font-weight: bold; }
+        .progress-bg { flex-grow: 1; height: 10px; background: #dfe6e9; border-radius: 5px; overflow: hidden; margin: 0 10px; }
+        .progress-fill { height: 100%; transition: width 0.3s; }
+        .stat-val { width: 35px; text-align: right; font-size: 12px; font-weight: bold; }
+        
+        .training-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .mode-btn { padding: 12px; border: 2px solid #ecf0f1; background: white; border-radius: 8px; font-size: 13px; cursor: pointer; text-align: center; color: #2c3e50; }
+        .mode-btn.selected { border-color: #c0392b; background: #fff5f5; color: #c0392b; }
+        .mode-btn.disabled { opacity: 0.5; background: #eee; cursor: not-allowed; border-color: #ddd; }
+        
+        .modal-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 200; display: none; justify-content: center; align-items: center; }
+        .modal-box { background: white; width: 85%; max-width: 340px; padding: 25px; border-radius: 12px; text-align: center; }
+        .modal-btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        .shop-modal-content { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(44, 62, 80, 0.98); z-index: 100; color: white; padding: 20px; display: none; flex-direction: column; }
+        .shop-item { background: rgba(255,255,255,0.1); padding: 12px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+        .log-box { flex: 1; overflow-y: auto; background: #fff; border-top: 1px solid #ddd; padding: 15px; font-size: 13px; line-height: 1.6; color: #555; }
+        
+        .badge-grid { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px; }
+        .badge { font-size: 10px; padding: 2px 6px; border-radius: 4px; color: white; background: #95a5a6; }
+        .badge.earned { background: #f1c40f; color: #c0392b; font-weight: bold; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- 首页 -->
+    <div id="screen-start" class="screen active" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color:white; text-align:center; justify-content:center; align-items:center;">
+        <h1 style="font-size: 48px; margin-bottom: 5px; text-shadow: 2px 2px 0 rgba(0,0,0,0.2);">乒乓人生</h1>
+        <div style="font-size: 18px; opacity: 0.9; letter-spacing: 2px;">TABLE TENNIS LIFE</div>
+        <div style="margin-top: 30px; font-size: 13px; opacity: 0.8; max-width: 80%;">
+           全国冠军比世界冠军难拿的人生模拟器
+        </div>
+        <button class="btn" style="background:#f1c40f; color:#c0392b; margin-top:40px; width:auto; padding:15px 50px; display:inline-block;" onclick="Game.startToPrologue()">开启生涯</button>
+    </div>
+
+    <!-- 序幕 -->
+    <div id="screen-prologue" class="screen">
+        <h2 style="border-bottom: 2px solid #c0392b; padding-bottom: 15px; margin-top: 0;">建立档案</h2>
+        <div id="prologue-content" style="flex:1;"></div>
+    </div>
+
+    <!-- 主界面 -->
+    <div id="screen-dashboard" class="screen" style="padding:0; background: #ecf0f1;">
+        <div class="top-bar">
+            <div>
+                <div id="ui-info" style="font-weight:bold; font-size: 16px;">16岁 · 省队</div>
+                <div id="ui-year-info" style="font-size:11px; opacity:0.9; margin-top:2px;">2024年</div>
+            </div>
+            <div style="text-align: right;">
+                <div id="ui-money">💰500</div>
+                <div id="ui-fame" style="font-size:11px; margin-top:2px;">★ 0</div>
+            </div>
+        </div>
+
+        <div style="padding: 15px; background: #fff; border-bottom-left-radius: 15px; border-bottom-right-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+            <div id="ui-stats"></div>
+            
+            <div style="margin-top:10px;">
+                <div style="font-size:12px; font-weight:bold; color:#7f8c8d; margin-bottom:5px;">荣誉室</div>
+                <div class="badge-grid">
+                    <span id="bdg-oly" class="badge">奥运金牌</span>
+                    <span id="bdg-wttc" class="badge">世乒冠军</span>
+                    <span id="bdg-cup" class="badge">世界杯</span>
+                    <span id="bdg-nat" class="badge">全运冠军</span>
+                    <span id="bdg-asi" class="badge">亚运金牌</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13px; color:#7f8c8d;">
+                    <strong>备战中心</strong>
+                    <span id="ui-actions">体力: 4/4</span>
+                </div>
+                <div class="training-grid" id="training-buttons"></div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="btn" id="btn-train" style="flex:2; margin:0; background:#c0392b; text-align: center;" onclick="Game.handleTraining()">执行计划</button>
+                    <button class="btn" style="flex:1; margin:0; background:#f39c12; text-align: center;" onclick="UI.openShop()">器材店</button>
+                </div>
+                
+                <div style="margin-top:15px; padding:10px; background:#f8f9fa; border-radius:8px; border:1px solid #eee;">
+                    <div style="font-size:12px; color:#95a5a6; margin-bottom:5px;">本年度重点赛事：</div>
+                    <div id="ui-next-match" style="font-weight:bold; color:#2c3e50; font-size:14px;">省队内部选拔赛</div>
+                </div>
+                <button id="btn-phase" class="btn" style="margin-top:5px; background:#2980b9; text-align: center;" onclick="Game.advancePhase()">参加比赛</button>
+            </div>
+        </div>
+
+        <div class="log-box" id="activity-log"></div>
+    </div>
+
+    <!-- 商店/弹窗/结局 -->
+    <div id="modal-shop" class="shop-modal-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.2);">
+            <h2 style="margin:0;">器材商店</h2>
+            <button onclick="UI.closeShopModal()" style="background:transparent; border:none; color:white; font-size:28px;">×</button>
+        </div>
+        <p>当前资金: <span id="shop-money" style="color:#f1c40f; font-weight:bold;">0</span></p>
+        <div id="shop-list" class="shop-list-container" style="flex:1; overflow-y:auto;"></div>
+    </div>
+
+    <div id="modal-alert" class="modal-overlay">
+        <div class="modal-box">
+            <div id="modal-title" style="font-size:18px; font-weight:bold; color:#c0392b; margin-bottom:10px;">标题</div>
+            <div id="modal-content" style="color:#34495e; margin-bottom:20px; text-align:left; line-height:1.5;">内容</div>
+            <div id="modal-btns" class="modal-btn-group">
+                <button id="modal-btn-ok" class="btn" style="margin:0; text-align:center;">确定</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="screen-ending" class="screen" style="text-align: center; padding-top: 50px; background: white;">
+        <h1 id="end-title" style="color:#c0392b; font-size: 32px; margin-bottom: 10px;"></h1>
+        <div id="end-badges" style="margin-bottom:20px; font-weight:bold; color:#f39c12;"></div>
+        <div id="end-desc" style="background:#f8f9fa; padding:20px; border-radius:10px; margin: 20px 0; text-align: left; line-height:1.8; color:#333;"></div>
+        <button class="btn" onclick="location.reload()" style="background:#34495e; margin-top:30px; text-align: center;">重启人生</button>
+    </div>
+</div>
+
+<script>
+const CONFIG = {
+    // 序幕
+    prologue: [
+        {
+            title: "出生地区",
+            desc: "不同的水土养育不同的打法风格。",
+            options: [
+                { txt: "东北铁岭", tag: "力量加成", stats: { atk: 15, tec: 5, sta: 10, men: 5 }, money: 100, fame: 0 },
+                { txt: "上海弄堂", tag: "技术加成", stats: { atk: 5, tec: 15, sta: 5, men: 10 }, money: 100, fame: 0 },
+                { txt: "北京大院", tag: "初始名气", stats: { atk: 8, tec: 8, sta: 8, men: 15 }, money: 100, fame: 150 }
+            ]
+        },
+        {
+            title: "家庭背景",
+            desc: "家庭条件决定了你的起跑线。",
+            options: [
+                { txt: "乒乓世家", tag: "基础扎实", stats: { atk: 10, tec: 10, sta: 10, men: 0 }, money: 200, fame: 50 },
+                { txt: "经商富豪", tag: "资金充裕", stats: { atk: 0, tec: 0, sta: 0, men: 5 }, money: 4000, fame: 0 },
+                { txt: "普通工薪", tag: "意志顽强", stats: { atk: 2, tec: 2, sta: 5, men: 15 }, money: 200, fame: 0 }
+            ]
+        },
+        {
+            title: "握拍流派",
+            desc: "技术流派决定上限。",
+            options: [
+                { txt: "横拍双面", tag: "均衡，后期强", stats: { atk: 10, tec: 10, sta: 5, men: 0 }, style: 'shakehand' },
+                { txt: "直拍单面", tag: "前三板强，反手弱", stats: { atk: 5, tec: 20, sta: 0, men: 5 }, style: 'penhold' },
+                { txt: "削球防守", tag: "守备极强", stats: { atk: 0, tec: 10, sta: 20, men: 5 }, style: 'chopper' }
+            ]
+        }
+    ],
+
+    trainings: [
+        { id: 'multiball', name: '多球特训', desc: '技术+++ 体能+ (HP-12)', effect: { tec: 4, sta: 1, hp: -12 } },
+        { id: 'weights', name: '力量房', desc: '进攻+++ (HP-15)', effect: { atk: 4, hp: -15 } },
+        { id: 'match_sim', name: '队内赛', desc: '心态++ 进攻+ (HP-12)', effect: { men: 3, atk: 1, hp: -12 } },
+        { id: 'footwork', name: '全台跑动', desc: '体能+++ 技术+ (HP-15)', effect: { sta: 4, tec: 1, hp: -15 } },
+        { id: 'rest', name: '理疗休息', desc: '恢复健康 (HP+40)', effect: { hp: 40 } }
+    ],
+
+    shopItems: [
+        { id: 'energy_drink', name: '特效药水', cost: 200, desc: 'HP+30 (救急用)', effect: { hp: 30 } },
+        { id: 'rubber_import', name: '进口套胶', cost: 600, desc: '进攻+5 技术+3', effect: { atk: 5, tec: 3 } },
+        { id: 'video_analyst', name: '顶级私教', cost: 1200, desc: '心态+10', effect: { men: 10 } },
+        { id: 'custom_blade', name: '特制底板', cost: 2500, desc: '进攻+15 (限1)', limit: 1, effect: { atk: 15 } },
+        { id: 'shoes', name: '定制球鞋', cost: 2000, desc: '体能+15 (限1)', limit: 1, effect: { sta: 15 } },
+        { id: 'marketing', name: '营销团队', cost: 1000, desc: '名气+200', effect: { fame: 200 } }
+    ],
+
+    // 阶级
+    ranks: [
+        { id: 0, name: '省队新人', desc: "目标：进入国家二队" },
+        { id: 1, name: '国家二队', desc: "目标：进入国家一队" },
+        { id: 2, name: '国家一队', desc: "目标：成为主力" },
+        { id: 3, name: '国家主力', desc: "目标：大满贯" }
+    ],
+
+    // 真实赛事库
+    tournaments: {
+        // --- 0级/1级 ---
+        provincial: { name: "省队选拔赛", req: 60, fame: 50, money: 100, hard: 1.0 },
+        national_2: { name: "升降级大循环", req: 180, fame: 150, money: 200, hard: 1.1 },
+        
+        // --- 3级：顶级赛事 (4年周期) ---
+        // 奥运年 (2024, 2028...)
+        olympics: { name: "奥运会", req: 450, fame: 2000, money: 1000, hard: 1.1, type: 'olympic', desc:"最高荣誉 压力巨大" },
+        wtt_finals: { name: "WTT总决赛", req: 420, fame: 400, money: 2500, hard: 1.0, type: 'commercial', desc:"年终抢钱赛" },
+        
+        // 全运年 (2025, 2029...) - 地狱级
+        national_games: { name: "全运会", req: 450, fame: 1000, money: 500, hard: 1.5, type: 'national', desc:"地狱级内卷" }, 
+        wttc_ind: { name: "世乒赛(单项)", req: 420, fame: 1000, money: 800, hard: 1.0, type: 'worlds', desc:"大满贯拼图" },
+        
+        // 亚运年 (2026, 2030...)
+        asian_games: { name: "亚运会", req: 400, fame: 800, money: 500, hard: 0.9, type: 'asian', desc:"洲际综合赛事" },
+        wtt_smash: { name: "WTT大满贯赛", req: 400, fame: 500, money: 2000, hard: 1.2, type: 'commercial', desc:"顶级商业赛" },
+        
+        // 世乒年 (2027, 2031...)
+        wttc_ind_odd: { name: "世乒赛(单项)", req: 420, fame: 1000, money: 800, hard: 1.0, type: 'worlds', desc:"大满贯拼图" },
+        world_cup: { name: "世界杯", req: 380, fame: 600, money: 1000, hard: 0.95, type: 'cup', desc:"三大赛之一" },
+        
+        // 次级/洲际
+        asian_champs: { name: "亚锦赛", req: 300, fame: 400, money: 400, hard: 0.9, type: 'asian_c' },
+        national_champs: { name: "全锦赛", req: 350, fame: 300, money: 300, hard: 1.3, type: 'national_c', desc:"全国练兵" },
+        wtt_contender: { name: "WTT挑战赛", req: 250, fame: 100, money: 600, hard: 0.8, type: 'commercial' }
+    }
+};
+
+let State = {
+    step: 0, style: '',
+    atk: 10, tec: 10, sta: 10, men: 10, fame: 0,
+    hp: 100, maxHp: 100,
+    year: 2024, age: 14, // 2024作为起点
+    money: 0,
+    titles: { olympic:0, worlds:0, cup:0, national:0, asian:0 },
+    rankLevel: 0,
+    actionsLeft: 4, selectedTraining: null, shopLimits: {}, tempAtk: 0,
+    injuryCount: 0 
+};
+
+const Game = {
+    startToPrologue: function() { UI.switchScreen('screen-prologue'); this.renderPrologueStep(); },
+
+    renderPrologueStep: function() {
+        if (State.step >= CONFIG.prologue.length) { this.startGame(); return; }
+        const data = CONFIG.prologue[State.step];
+        const container = document.getElementById('prologue-content');
+        let html = `<p style="margin-bottom:20px; font-weight:bold; color:#555;">${data.desc}</p>`;
+        data.options.forEach((opt, idx) => {
+            html += `<button class="btn" onclick="Game.choosePrologue(${idx})">
+                <div style="font-weight:bold; color:#f1c40f;">${opt.txt}</div>
+                <small style="color:white;">${opt.tag}</small>
+            </button>`;
+        });
+        container.innerHTML = html;
+    },
+
+    choosePrologue: function(idx) {
+        const opt = CONFIG.prologue[State.step].options[idx];
+        if (opt.style) State.style = opt.style;
+        if (opt.money) State.money += opt.money;
+        if (opt.fame) State.fame += opt.fame;
+        for (let key in opt.stats) State[key] += opt.stats[key];
+        State.step++;
+        this.renderPrologueStep();
+    },
+
+    startGame: function() {
+        UI.switchScreen('screen-dashboard');
+        UI.initTrainingButtons();
+        UI.updateDashboard();
+        UI.log("教练：欢迎入队。记住，我们的目标是全运会和奥运会！");
+    },
+
+    handleTraining: function() {
+        if (!State.selectedTraining) { UI.showAlert("提示", "请选择一项行动！"); return; }
+        if (State.actionsLeft <= 0) { UI.showAlert("提示", "体力耗尽，请参加比赛！"); return; }
+        if (State.hp < 30 && State.selectedTraining !== 'rest') { UI.showAlert("队医警告", "HP<30 禁止训练，只能理疗！"); return; }
+
+        const train = CONFIG.trainings.find(t => t.id === State.selectedTraining);
+        let hpChange = train.effect.hp;
+        State.hp += hpChange;
+        if (State.hp > State.maxHp) State.hp = State.maxHp;
+
+        let log = `【${train.name}】`;
+        for (let key in train.effect) {
+            if (key !== 'hp') {
+                let gain = train.effect[key];
+                if (State[key] > 150) gain *= 0.5; else if (State[key] > 120) gain *= 0.8;
+                State[key] += gain;
+                log += ` ${UI.getStatName(key)}+${gain.toFixed(1)}`;
+            }
+        }
+        UI.log(log);
+        
+        if (State.hp < 0) { Game.endGame('injury'); return; }
+        else if (State.hp < 20 && State.selectedTraining !== 'rest' && Math.random() < 0.3) {
+            State.hp -= 15; State.maxHp -= 5; UI.showAlert("事故", "训练受伤，HP上限-5");
+        }
+
+        State.actionsLeft--;
+        UI.updateDashboard();
+    },
+
+    advancePhase: function() {
+        if (State.hp < 20) UI.showAlert("警告", "HP极低，比赛可能致残！", () => Game.runCompetition());
+        else if (State.actionsLeft > 0) UI.showChoice("确认", "直接比赛？", "是", () => Game.runCompetition(), "否", null);
+        else Game.runCompetition();
+    },
+
+    // 核心：基于现实周期的赛事安排
+    getCurrentTournament: function() {
+        if (State.rankLevel === 0) return CONFIG.tournaments.provincial;
+        if (State.rankLevel === 1) return CONFIG.tournaments.national_2;
+
+        const cycle = State.year % 4;
+        let mainTourney, subTourney;
+
+        // 周期逻辑 (假设2024是奥运年 => mod 4 == 0)
+        if (cycle === 0) { // 奥运年
+            mainTourney = CONFIG.tournaments.olympics;
+        } else if (cycle === 1) { // 全运年
+            mainTourney = CONFIG.tournaments.national_games; 
+        } else if (cycle === 2) { // 亚运年
+            mainTourney = CONFIG.tournaments.asian_games;
+        } else { // 综合年
+            mainTourney = CONFIG.tournaments.wttc_ind_odd;
+        }
+
+        if (State.rankLevel === 2) {
+            if (cycle === 0) return CONFIG.tournaments.wtt_contender;
+            if (cycle === 1) return CONFIG.tournaments.asian_champs;
+            if (cycle === 2) return CONFIG.tournaments.national_champs;
+            return CONFIG.tournaments.wtt_contender;
+        }
+
+        if (cycle === 1) return CONFIG.tournaments.national_games; 
+        return mainTourney;
+    },
+
+    runCompetition: function() {
+        const tourney = this.getCurrentTournament();
+        
+        // 难度公式
+        let enemyPower = (tourney.req + ((State.year - 2024) * 8)) * (tourney.hard || 1.0);
+        
+        const playerPower = State.atk + State.tec + State.sta + State.men + State.tempAtk;
+        State.tempAtk = 0; 
+
+        let pScore = 0, eScore = 0, fatigue = 0, logStr = "";
+        for (let i = 0; i < 7; i++) {
+            if (pScore === 4 || eScore === 4) break;
+            fatigue += 3;
+            let winRate = 0.5 + (playerPower - enemyPower) * 0.005;
+            if (pScore === 3 && eScore === 3) winRate += (State.men * 0.002);
+            if (Math.random() < winRate) { pScore++; } else { eScore++; }
+        }
+
+        State.hp -= fatigue; 
+        const isWin = pScore > eScore;
+        let msg = `在【${tourney.name}】中，比分 ${pScore}:${eScore}\n(敌力:${Math.floor(enemyPower)} vs 我力:${Math.floor(playerPower)})\n`;
+        let pendingOffer = null;
+
+        if (isWin) {
+            const reward = tourney.money + (State.rankLevel * 100);
+            State.money += reward; State.fame += tourney.fame; State.men += 5;
+            msg += `获胜！奖金+${reward}，名气+${tourney.fame}。\n`;
+
+            if (State.rankLevel < 2) {
+                 State.rankLevel++; msg += `\n表现优异，晋升至【${CONFIG.ranks[State.rankLevel].name}】！`;
+            } else if (State.rankLevel === 2 && tourney.type !== 'commercial') {
+                 State.rankLevel++; msg += `\n正式进入【主力层】，开始冲击大满贯！`;
+            }
+
+            if (tourney.type === 'olympic') State.titles.olympic++;
+            if (tourney.type === 'worlds') State.titles.worlds++;
+            if (tourney.type === 'cup') State.titles.cup++;
+            if (tourney.type === 'national' || tourney.type === 'national_games') State.titles.national++;
+            if (tourney.type === 'asian' || tourney.type === 'asian_games') State.titles.asian++;
+
+            let adChance = Math.min(0.9, State.fame / 1000);
+            if (Math.random() < adChance) {
+                pendingOffer = { 
+                    money: Math.floor(tourney.money * 0.8 + State.fame), 
+                    fame: 100, hp: 15 
+                };
+            }
+        } else {
+            State.money += 50; msg += "惜败。"; State.men -= 2;
+            if (State.rankLevel === 1 && Math.random() < 0.1) { State.rankLevel--; msg += "\n降级回省队！"; }
+        }
+
+        const afterMatch = () => {
+            if (State.hp < 0) { Game.endGame('injury'); return; }
+            if (pendingOffer) {
+                UI.showChoice("代言邀约", 
+                    `【接广告】💰${pendingOffer.money} 名气+${pendingOffer.fame} (体力-15)\n【拒接加练】技术+3 心态+2 (体力-10)`,
+                    "接广告", () => Game.processEndorsement(pendingOffer, true),
+                    "加练", () => Game.processEndorsement(pendingOffer, false)
+                );
+            } else { Game.nextYear(); }
+        };
+        UI.showAlert("赛果", msg, afterMatch);
+    },
+
+    processEndorsement: function(offer, accepted) {
+        if (accepted) { State.money += offer.money; State.fame += offer.fame; State.hp -= 15; UI.log("接拍广告 (HP-15)"); }
+        else { State.tec += 3; State.men += 2; State.hp -= 10; UI.log("拒绝代言加练 (HP-10)"); }
+        if (State.hp < 0) { UI.showAlert("过劳", "身体崩溃...", () => Game.endGame('injury')); return; }
+        UI.updateDashboard(); Game.nextYear();
+    },
+
+    nextYear: function() {
+        State.year++; State.age++; State.actionsLeft = 4; State.shopLimits = {};
+        if (State.hp < 30) {
+            State.injuryCount++;
+            if (State.injuryCount >= 3) { UI.showAlert("退役", "长期伤病强制退役", () => Game.endGame('chronic')); return; }
+        } else State.injuryCount = 0;
+        State.hp = Math.min(State.maxHp, State.hp + 5);
+        if (State.fame > 300) State.money += Math.floor(State.fame * 0.4);
+
+        if (State.age >= 35) { Game.endGame('age'); return; }
+        UI.updateDashboard();
+        UI.log(`--- ${State.year}年 (${State.age}岁) ---`);
+    },
+
+    endGame: function(reason) {
+        UI.switchScreen('screen-ending');
+        const gs = State.titles.olympic > 0 && State.titles.worlds > 0 && State.titles.cup > 0;
+        const super_gs = gs && State.titles.national > 0 && State.titles.asian > 0;
+        
+        let title = "退役", badges = "";
+        if (super_gs) { title = "全满贯传奇"; badges += "【全满贯】"; }
+        else if (gs) { title = "大满贯得主"; badges += "【大满贯】"; }
+        else if (State.titles.national > 0) { title = "全运战神"; badges += "【内卷之王】"; }
+        
+        if (reason === 'injury') { title += " (因伤退役)"; badges += " 【悲情】"; }
+        else if (reason === 'chronic') { title += " (伤病缠身)"; badges += " 【遗憾】"; }
+        
+        let desc = `最终段位：${CONFIG.ranks[State.rankLevel].name}\n名气：${State.fame}\n存款：${State.money}\n\n`;
+        desc += `奥运金牌：${State.titles.olympic}\n世乒金牌：${State.titles.worlds}\n世界杯：${State.titles.cup}\n全运金牌：${State.titles.national}\n亚运金牌：${State.titles.asian}`;
+        
+        document.getElementById('end-title').innerText = title;
+        document.getElementById('end-badges').innerText = badges;
+        document.getElementById('end-desc').innerText = desc;
+    }
+};
+
+const UI = {
+    switchScreen: function(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); },
+    getStatName: function(k) { return {atk:'进攻', tec:'技术', sta:'体能', men:'心态', hp:'HP', fame:'名气'}[k] || k; },
+    initTrainingButtons: function() {
+        const c = document.getElementById('training-buttons'); c.innerHTML = '';
+        CONFIG.trainings.forEach(t => {
+            const b = document.createElement('div'); b.className = 'mode-btn';
+            let color = t.id === 'rest' ? '#2ecc71' : '#2c3e50';
+            b.innerHTML = `<div style="color:${color}">${t.name}</div><div style="font-size:11px;color:#7f8c8d">${t.desc}</div>`;
+            b.id = `btn-act-${t.id}`;
+            b.onclick = () => { if (!b.classList.contains('disabled')) { document.querySelectorAll('.mode-btn').forEach(x => x.classList.remove('selected')); b.classList.add('selected'); State.selectedTraining = t.id; }};
+            c.appendChild(b);
+        });
+    },
+    updateDashboard: function() {
+        document.getElementById('ui-info').innerText = `${State.age}岁 · ${CONFIG.ranks[State.rankLevel].name}`;
+        const tourney = Game.getCurrentTournament();
+        document.getElementById('ui-year-info').innerText = `${State.year}年`;
+        document.getElementById('ui-next-match').innerText = tourney.desc ? `${tourney.name} (${tourney.desc})` : tourney.name;
+        
+        document.getElementById('ui-money').innerText = `💰${State.money}`;
+        document.getElementById('ui-fame').innerText = `★ ${State.fame}`;
+        document.getElementById('ui-actions').innerText = `体力: ${State.actionsLeft}/4`;
+
+        if (State.titles.olympic > 0) document.getElementById('bdg-oly').classList.add('earned');
+        if (State.titles.worlds > 0) document.getElementById('bdg-wttc').classList.add('earned');
+        if (State.titles.cup > 0) document.getElementById('bdg-cup').classList.add('earned');
+        if (State.titles.national > 0) document.getElementById('bdg-nat').classList.add('earned');
+        if (State.titles.asian > 0) document.getElementById('bdg-asi').classList.add('earned');
+
+        let html = '';
+        const stats = [ {k:'atk', n:'进攻', c:'var(--atk-color)'}, {k:'tec', n:'技术', c:'var(--tec-color)'}, {k:'sta', n:'体能', c:'var(--sta-color)'}, {k:'men', n:'心态', c:'var(--men-color)'}, {k:'hp', n:'健康', c:State.hp>30?'var(--hp-high)':'var(--hp-low)'} ];
+        stats.forEach(s => {
+            const v = State[s.k]; const max = s.k==='hp'?State.maxHp:200; 
+            html += `<div class="stat-row"><div class="stat-label" style="color:${s.c}">${s.n}</div><div class="progress-bg"><div class="progress-fill" style="width:${Math.min(100, (v/max)*100)}%; background:${s.c}"></div></div><div class="stat-val">${Math.floor(v)}</div></div>`;
+        });
+        document.getElementById('ui-stats').innerHTML = html;
+        
+        const isCritical = State.hp < 30;
+        document.querySelectorAll('.mode-btn').forEach(btn => { if (isCritical && !btn.id.includes('rest')) btn.classList.add('disabled'); else btn.classList.remove('disabled'); });
+        
+        const btn = document.getElementById('btn-phase');
+        if (State.actionsLeft > 0) { btn.innerText = "结束训练(提前比赛)"; btn.style.background = "#95a5a6"; }
+        else { btn.innerText = `参加 ${tourney.name}`; btn.style.background = "#2980b9"; }
+    },
+    log: function(msg) { const b = document.getElementById('activity-log'); const d = document.createElement('div'); d.className='log-item'; d.innerText = `[${State.year}] ${msg}`; b.prepend(d); },
+    showAlert: function(t, c, cb) { document.getElementById('modal-title').innerText = t; document.getElementById('modal-content').innerText = c; const group = document.getElementById('modal-btns'); group.innerHTML = ''; const btn = document.createElement('button'); btn.className = 'btn'; btn.innerText = '确定'; btn.onclick = () => { document.getElementById('modal-alert').style.display = 'none'; if(cb) cb(); }; group.appendChild(btn); document.getElementById('modal-alert').style.display = 'flex'; },
+    showChoice: function(t, c, b1t, b1cb, b2t, b2cb) { document.getElementById('modal-title').innerText = t; document.getElementById('modal-content').innerText = c; const group = document.getElementById('modal-btns'); group.innerHTML = ''; const btn1 = document.createElement('button'); btn1.className = 'btn'; btn1.style.background = '#e67e22'; btn1.innerText = b1t; btn1.onclick = () => { document.getElementById('modal-alert').style.display = 'none'; if(b1cb) b1cb(); }; const btn2 = document.createElement('button'); btn2.className = 'btn'; btn2.style.background = '#34495e'; btn2.innerText = b2t; btn2.onclick = () => { document.getElementById('modal-alert').style.display = 'none'; if(b2cb) b2cb(); }; group.appendChild(btn1); group.appendChild(btn2); document.getElementById('modal-alert').style.display = 'flex'; },
+    openShop: function() { const list = document.getElementById('shop-list'); list.innerHTML = ''; document.getElementById('shop-money').innerText = State.money; CONFIG.shopItems.forEach(i => { const cnt = State.shopLimits[i.id]||0; const soldOut = i.limit && cnt >= i.limit; const canBuy = State.money >= i.cost; const d = document.createElement('div'); d.className = 'shop-item'; d.innerHTML = `<div style="flex:1"><div style="font-weight:bold;color:${soldOut?'#aaa':'#fff'}">${i.name}</div><small>${i.desc}</small></div><button class="btn" style="width:auto;padding:8px;background:${(canBuy&&!soldOut)?'#f39c12':'#555'}" onclick="UI.buyItem('${i.id}')" ${(canBuy&&!soldOut)?'':'disabled'}>${soldOut?'售罄':i.cost}</button>`; list.appendChild(d); }); document.getElementById('modal-shop').style.display = 'flex'; },
+    closeShopModal: () => document.getElementById('modal-shop').style.display = 'none',
+    buyItem: function(id) { const i = CONFIG.shopItems.find(x => x.id === id); State.money -= i.cost; if(i.limit) State.shopLimits[id] = (State.shopLimits[id]||0) + 1; for(let k in i.effect) { if(k.startsWith('temp')) State[k] = (State[k]||0)+i.effect[k]; else { State[k] += i.effect[k]; if(k==='hp' && State[k]>State.maxHp) State[k]=State.maxHp; }} UI.log(`购买 ${i.name}`); UI.openShop(); UI.updateDashboard(); }
+};
+</script>
+</body>
+</html>
