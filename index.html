@@ -230,7 +230,7 @@ const CONFIG = {
 };
 
 let State = {
-    step: 0, style: '',
+    step: 0, style: '', origin: '', // 修复：增加origin字段
     atk: 10, tec: 10, sta: 10, men: 10, fame: 0,
     hp: 100, maxHp: 100,
     year: 2024, age: 14, // 2024作为起点
@@ -260,6 +260,7 @@ const Game = {
 
     choosePrologue: function(idx) {
         const opt = CONFIG.prologue[State.step].options[idx];
+        if (State.step === 0) State.origin = opt.txt; // 修复：记录出生地文字
         if (opt.style) State.style = opt.style;
         if (opt.money) State.money += opt.money;
         if (opt.fame) State.fame += opt.fame;
@@ -478,7 +479,7 @@ const Game = {
         desc += `退役年龄：${State.age}岁\n`;
         desc += `生涯名气：${State.fame}\n`;
         desc += `最终身价：💰${State.money}\n\n`;
-        desc += `生涯总结：你从${CONFIG.prologue[0].options.find(o=>o.stats.atk===15||o.stats.tec===15||o.fame===150).txt}起步，`;
+        desc += `生涯总结：你从${State.origin}起步，`; // 修复：直接读取保存的文字
         
         if (tierName === "乒乓之神") desc += "一路神挡杀神，拿到了所有能拿的冠军，成为了这项运动的图腾。";
         else if (tierName === "时代记忆") desc += "在大赛中展现了绝对的统治力，你的名字被刻入了乒乓球的历史。";
