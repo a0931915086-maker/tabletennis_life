@@ -348,8 +348,19 @@ const Game = {
         for (let i = 0; i < 7; i++) {
             if (pScore === 4 || eScore === 4) break;
             fatigue += 3;
-            let winRate = 0.5 + (playerPower - enemyPower) * 0.005;
+            
+            // ============ 关键修改：提升胜率10% ============
+            // 原公式：let winRate = 0.5 + (playerPower - enemyPower) * 0.005;
+            // 修改为：将基准胜率从0.5提高到0.6（提升10%）
+            // 同时略微提高实力差距的影响系数，从0.005提高到0.006
+            let winRate = 0.6 + (playerPower - enemyPower) * 0.006;
+            // ============ 修改结束 ============
+            
             if (pScore === 3 && eScore === 3) winRate += (State.men * 0.002);
+            
+            // 确保胜率在合理范围内
+            winRate = Math.max(0.1, Math.min(0.95, winRate));
+            
             if (Math.random() < winRate) { pScore++; } else { eScore++; }
         }
 
